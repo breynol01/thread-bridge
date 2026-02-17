@@ -1,0 +1,12 @@
+{
+  "id": "ses_001",
+  "slug": "test-squid",
+  "version": "1.1.61",
+  "projectID": "abc123",
+  "directory": "/Users/test/my-project",
+  "title": "Test session for thread-bridge",
+  "time": {
+    "created": 1700000050000,
+    "updated": 1700000090000
+  }
+}

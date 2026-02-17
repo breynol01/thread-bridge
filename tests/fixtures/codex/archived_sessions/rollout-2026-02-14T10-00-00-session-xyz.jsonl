@@ -1,0 +1,2 @@
+{"timestamp":"2026-02-14T10:00:00.000Z","type":"session_meta","payload":{"id":"session-xyz","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/Users/test/project-beta","originator":"Codex CLI","cli_version":"0.93.0"}}
+{"timestamp":"2026-02-14T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"Set up the project structure"}}

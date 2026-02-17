@@ -1,0 +1,17 @@
+{
+  "id": "prt_003",
+  "sessionID": "ses_001",
+  "messageID": "msg_002",
+  "type": "tool",
+  "callID": "call_abc",
+  "tool": "bash",
+  "state": {
+    "status": "completed",
+    "input": {
+      "command": "ls -la",
+      "description": "List files"
+    },
+    "output": "total 8\ndrwxr-xr-x  3 test  staff  96 Nov 14 10:00 .\ndrwxr-xr-x  5 test  staff 160 Nov 14 10:00 ..",
+    "title": "List files"
+  }
+}

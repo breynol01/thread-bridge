@@ -1,0 +1,9 @@
+{
+  "thread-titles": {
+    "titles": {
+      "session-abc": "Fix Auth Bug (Desktop)",
+      "session-xyz": "Project Setup"
+    },
+    "order": ["session-abc", "session-xyz"]
+  }
+}

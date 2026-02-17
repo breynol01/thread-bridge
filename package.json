@@ -1,0 +1,32 @@
+{
+  "name": "thread-bridge",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Unified thread viewer for Codex, Claude Code, and OpenCode",
+  "bin": {
+    "thread-bridge": "./bin/thread-bridge.mjs"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx bin/thread-bridge.ts",
+    "dev": "tsx bin/thread-bridge.ts",
+    "tui": "tsx bin/thread-bridge.ts tui",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "ink": "^6.7.0",
+    "react": "^19.2.4",
+    "tsx": "^4.19.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "@types/react": "^19.2.14",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}

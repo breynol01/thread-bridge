@@ -1,0 +1,6 @@
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { Box, Text } from "ink";
+export function StatusBar({ activePanel, searchActive, searchQuery, selectedSession, }) {
+    const isMessages = activePanel === "messages";
+    return (_jsx(Box, { children: _jsxs(Text, { dimColor: true, children: [" ", _jsx(Text, { bold: true, color: "yellow", children: "Tab" }), " switch", "  ", _jsx(Text, { bold: true, color: "yellow", children: "j/k" }), " ", isMessages ? "scroll" : "navigate", "  ", isMessages && (_jsxs(_Fragment, { children: [_jsx(Text, { bold: true, color: "yellow", children: "d/u" }), " page", "  "] })), _jsx(Text, { bold: true, color: "yellow", children: "h/l" }), " panels", "  ", !isMessages && (_jsxs(_Fragment, { children: [_jsx(Text, { bold: true, color: "yellow", children: "Enter" }), " select", "  "] })), _jsx(Text, { bold: true, color: "yellow", children: "/" }), " search", "  ", _jsx(Text, { bold: true, color: "yellow", children: "q" }), " quit", "  ", _jsxs(Text, { dimColor: true, children: ["[", activePanel, "]"] }), selectedSession && (_jsxs(Text, { dimColor: true, children: ["  ", selectedSession.provider] })), searchActive && (_jsxs(Text, { dimColor: true, children: ["  ", _jsx(Text, { color: "cyan", children: "search" }), " /", searchQuery] }))] }) }));
+}

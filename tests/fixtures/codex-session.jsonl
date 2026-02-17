@@ -1,0 +1,16 @@
+{"timestamp":"2026-02-08T19:00:00.000Z","type":"session_meta","payload":{"id":"test-codex-session-001","timestamp":"2026-02-08T19:00:00.000Z","cwd":"/Users/test/project","originator":"Codex Desktop","cli_version":"0.99.0","source":"vscode","model_provider":"openai"}}
+{"timestamp":"2026-02-08T19:00:01.000Z","type":"turn_context","payload":{"cwd":"/Users/test/project","model":"gpt-5.2-codex","personality":"pragmatic"}}
+{"timestamp":"2026-02-08T19:00:02.000Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"System instructions here"}]}}
+{"timestamp":"2026-02-08T19:00:03.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"List the files in the current directory"}]}}
+{"timestamp":"2026-02-08T19:00:03.000Z","type":"event_msg","payload":{"type":"user_message","message":"List the files in the current directory","images":[]}}
+{"timestamp":"2026-02-08T19:00:04.000Z","type":"response_item","payload":{"type":"reasoning","id":"reasoning_001","summary":[{"type":"summary_text","text":"User wants to see directory contents"}]}}
+{"timestamp":"2026-02-08T19:00:05.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"I'll list the files for you."}]}}
+{"timestamp":"2026-02-08T19:00:06.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"ls -la\",\"workdir\":\"/Users/test/project\"}","call_id":"call_test001"}}
+{"timestamp":"2026-02-08T19:00:07.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":100,"output_tokens":50}}}}
+{"timestamp":"2026-02-08T19:00:08.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_test001","output":"total 4\n-rw-r--r-- 1 user staff 100 Feb 8 19:00 README.md\n-rw-r--r-- 1 user staff 200 Feb 8 19:00 package.json"}}
+{"timestamp":"2026-02-08T19:00:09.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Here are the files in the current directory:\n- README.md\n- package.json"}]}}
+{"timestamp":"2026-02-08T19:00:10.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Now read the README"}]}}
+{"timestamp":"2026-02-08T19:00:10.000Z","type":"event_msg","payload":{"type":"user_message","message":"Now read the README","images":[]}}
+{"timestamp":"2026-02-08T19:00:11.000Z","type":"response_item","payload":{"type":"function_call","name":"read_file","arguments":"{\"path\":\"/Users/test/project/README.md\"}","call_id":"call_test002"}}
+{"timestamp":"2026-02-08T19:00:12.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call_test002","output":"# Test Project\nThis is a test project."}}
+{"timestamp":"2026-02-08T19:00:13.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"The README says:\n\n# Test Project\nThis is a test project."}]}}
