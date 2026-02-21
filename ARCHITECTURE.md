@@ -61,3 +61,7 @@ thread-bridge is a thin CLI/TUI orchestration layer built on Ink/Commander/TypeS
 - Add a write-back proxy layer that can route responses to Codex, Claude, or OpenCode while preserving IR provenance (V2 “Beeper” plan mentioned in `MEMORY.md`).
 - Expand provider list (Cursor, Windsurf, etc.) with minimal friction by reusing the provider registry + IR conversion pipeline.
 - Polish TUI: search/filter, metadata sidebar, markdown rendering, and session stats panels to match CLI capabilities noted in the next-steps list in `MEMORY.md`.
+
+## Maintenance Status
+
+- The current architecture is frozen in maintenance mode until a new cross-tool memory pain emerges. Keep provider readers working but avoid expanding the CLI/TUI surface unless absolutely necessary.

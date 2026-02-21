@@ -25,3 +25,7 @@
 - V2: Beeper-style write-back / proxy layer for bidirectional messaging
 - Consider adding more providers (Cursor, Windsurf, etc.)
 - TUI polish: search/filter, session metadata panel, markdown rendering
+
+## Maintenance Notes
+
+- As of 2026-02-21, thread-bridge is on maintenance: keep provider discovery & readers working, but do not act on Next Steps until a clear, new multi-tool memory pain appears.

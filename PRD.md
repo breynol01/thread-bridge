@@ -66,3 +66,7 @@ thread-bridge is a CLI/TUI utility that gives power users one place to read thei
 2. Polish V1 CLI/TUI (search/filter, metadata, markdown) and record in MEMORY. 🛠️
 3. Add OpenCode SQLite reader stub and confirm both stores are supported. 🧪
 4. Implement V2 write-back proxy + provider adapters. 🔁
+
+## Maintenance Status
+
+- As of 2026-02-21, thread-bridge is in maintenance mode. The canonical docs capture the current workflows, so feature work is paused until a new cross-tool memory pain justifies further investment.
