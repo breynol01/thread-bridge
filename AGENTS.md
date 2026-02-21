@@ -74,3 +74,8 @@ mgrep -m 5 "API endpoints"
 
 ---
 
+## Current Posture
+
+- `thread-bridge` is maintained only to ensure provider discovery/readers stay compatible; canonical memory docs have already solved the cross-tool memory goal so feature work is paused.
+- Surface regressions or new memory pains through `MEMORY.md`, and only accept enhancements once a clearly unmet workflow need reappears.
+---
