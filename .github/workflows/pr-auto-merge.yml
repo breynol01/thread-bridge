@@ -1,0 +1,52 @@
+name: PR Auto-Merge on Daedalus Approval
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: >-
+      github.event.review.state == 'approved' &&
+      github.event.review.user.login == 'daedalus-reviewer[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check for blocking reviews and merge
+        shell: bash
+        env:
+          REPO_FULL_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+
+          echo "Daedalus approved ${REPO_FULL_NAME}#${PR_NUMBER} — checking merge eligibility"
+
+          # Use GitHub's computed reviewDecision — resolves latest-per-reviewer,
+          # dismissed reviews, and branch protection rules server-side.
+          pr_json=$(gh pr view "$PR_NUMBER" --repo "$REPO_FULL_NAME" --json state,reviewDecision)
+          pr_state=$(echo "$pr_json" | jq -r '.state')
+          review_decision=$(echo "$pr_json" | jq -r '.reviewDecision // empty')
+
+          if [[ "$pr_state" != "OPEN" ]]; then
+            echo "PR is ${pr_state} — nothing to merge"
+            exit 0
+          fi
+
+          if [[ "$review_decision" == "CHANGES_REQUESTED" ]]; then
+            echo "::warning::reviewDecision is CHANGES_REQUESTED — skipping auto-merge"
+            exit 0
+          fi
+
+          echo "All checks passed — merging ${REPO_FULL_NAME}#${PR_NUMBER}"
+          gh pr merge "$PR_NUMBER" --repo "$REPO_FULL_NAME" --squash --delete-branch
+
+          echo "✅ Auto-merged ${REPO_FULL_NAME}#${PR_NUMBER}"

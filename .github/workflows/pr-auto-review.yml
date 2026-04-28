@@ -1,0 +1,129 @@
+name: PR Auto-Review (Daedalus)
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  dispatch-daedalus-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check review round cap and dispatch Daedalus review
+        shell: bash
+        env:
+          REPO_FULL_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          DIFF_URL: ${{ github.event.pull_request.diff_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          ACTION: ${{ github.event.action }}
+          OPENCLAW_GATEWAY_URL: ${{ secrets.OPENCLAW_GATEWAY_URL }}
+          OPENCLAW_GATEWAY_TOKEN: ${{ secrets.OPENCLAW_GATEWAY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          MAX_REVIEW_ROUNDS=3
+
+          if [[ -z "$OPENCLAW_GATEWAY_URL" || -z "$OPENCLAW_GATEWAY_TOKEN" ]]; then
+            echo "::warning::Gateway secrets not configured — skipping auto-review dispatch"
+            exit 0
+          fi
+
+          # Skip if Daedalus already reviewed this exact SHA (prevents duplicate
+          # sessions when pr-auto-review and pr-review-dispatch both fire)
+          daedalus_sha_reviewed=$(gh api "repos/${REPO_FULL_NAME}/pulls/${PR_NUMBER}/reviews" \
+            --jq "[.[] | select(.user.login == \"daedalus-reviewer[bot]\" and .commit_id == \"${HEAD_SHA}\")] | length" 2>/dev/null || echo "0")
+          if [[ "$daedalus_sha_reviewed" -gt "0" ]]; then
+            echo "Daedalus already reviewed SHA ${HEAD_SHA:0:12} — skipping duplicate dispatch"
+            exit 0
+          fi
+
+          # On synchronize, check review round cap
+          if [[ "$ACTION" == "synchronize" ]]; then
+            daedalus_commits=$(gh api "repos/${REPO_FULL_NAME}/pulls/${PR_NUMBER}/reviews" --jq '[.[] | select(.user.login == "daedalus-reviewer[bot]") | .commit_id] | unique | length' 2>/dev/null || echo "0")
+            if [[ "$daedalus_commits" -ge "$MAX_REVIEW_ROUNDS" ]]; then
+              echo "Review round cap reached (${daedalus_commits}/${MAX_REVIEW_ROUNDS}) — skipping"
+              exit 0
+            fi
+          fi
+
+          # Build the review request message
+          short_sha="${HEAD_SHA:0:12}"
+
+          # Sanitize fields for safe embedding
+          safe_title=$(printf '%s' "$PR_TITLE" | tr '\n\r\t' '   ' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
+
+          message="[pr-review-request]
+          Repository: ${REPO_FULL_NAME}
+          PR: #${PR_NUMBER}
+          Action: ${ACTION}
+          Head SHA: ${short_sha}
+          Author: ${AUTHOR}
+          Title: ${safe_title}
+          PR URL: ${PR_URL}
+          Diff URL: ${DIFF_URL}
+
+          Run Daedalus review and submit a FORMAL GitHub PR review (APPROVE or REQUEST_CHANGES only — no COMMENT). Do not post a plain issue comment.
+          Use reviewer identity: daedalus-reviewer[bot].
+
+          REVIEW STANCE: Assume the code is broken until you've convinced yourself otherwise. Before approving, enumerate at least 3 ways this change could fail and explain why they don't apply. If you identify an issue, do not downgrade it — flag it at the severity you first assessed.
+
+          RUNTIME CHECK:
+            1. Syntax check: python3 -m py_compile on all changed .py files
+            2. If the PR touches files in scripts/ or scripts/tests/, run tests:
+               python3 -m pytest scripts/tests/ -x -q --tb=short 2>&1 | tail -30
+            3. If tests fail: distinguish PR-caused from pre-existing failures.
+               PR-caused failures are blocking findings. Pre-existing failures are noted but don't block.
+               Always proceed with diff review regardless.
+            4. If tests can't run (missing deps, no test files): note 'UNABLE TO VERIFY' and proceed with diff review.
+            5. If tests pass: note 'Pre-review test run: N tests passed' in summary.
+
+          IMPORTANT: Post the review using daedalus_review_poster.py (NOT raw gh api):
+            1. Write review JSON to a temp file with verdict, summary, and comments
+            2. Run: python3 ~/Documents/Codex/tantalus-ops/scripts/daedalus_review_poster.py --repo ${REPO_FULL_NAME} --pr ${PR_NUMBER} --review-file <path>
+            3. Do NOT set GH_TOKEN — the poster uses GitHub App auth automatically."
+
+          endpoint="${OPENCLAW_GATEWAY_URL%/}/v1/responses"
+          json_body=$(printf '{"model":"openclaw/daedalus","input":%s}' "$(printf '%s' "$message" | jq -Rs .)")
+
+          # Gateway /v1/responses blocks until agent completes (~30-120s).
+          # Retry up to 3 times with backoff for transient failures (524, timeout).
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+          attempt=0
+          curl_exit=1
+
+          while [[ $attempt -lt $MAX_RETRIES ]]; do
+            attempt=$((attempt + 1))
+            echo "Dispatch attempt ${attempt}/${MAX_RETRIES}..."
+
+            curl --silent --show-error --fail \
+              --request POST "$endpoint" \
+              --header "Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}" \
+              --header "X-OpenClaw-Scopes: operator.write" \
+              --header "Content-Type: application/json" \
+              --connect-timeout 15 \
+              --max-time 300 \
+              --data "$json_body"
+            curl_exit=$?
+
+            if [[ $curl_exit -eq 0 ]]; then
+              echo "Dispatched Daedalus auto-review for ${REPO_FULL_NAME}#${PR_NUMBER} (${ACTION}, sha=${short_sha})"
+              break
+            fi
+
+            echo "::warning::Dispatch attempt ${attempt} failed (curl exit=${curl_exit})"
+            if [[ $attempt -lt $MAX_RETRIES ]]; then
+              echo "Retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          done
+
+          if [[ $curl_exit -ne 0 ]]; then
+            echo "::error::Daedalus dispatch failed after ${MAX_RETRIES} attempts (curl exit=${curl_exit}) — review was NOT submitted"
+            exit 1
+          fi
