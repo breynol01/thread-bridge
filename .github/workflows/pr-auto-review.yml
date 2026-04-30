@@ -1,4 +1,5 @@
-name: PR Auto-Review (Daedalus)
+# Synced from tantalus-ops — edit canonical at tantalus-ops/.github/workflows/pr-auto-review.yml
+name: PR Auto-Review
 
 on:
   pull_request:
@@ -126,4 +127,98 @@ jobs:
           if [[ $curl_exit -ne 0 ]]; then
             echo "::error::Daedalus dispatch failed after ${MAX_RETRIES} attempts (curl exit=${curl_exit}) — review was NOT submitted"
             exit 1
+          fi
+
+  dispatch-prometheus-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check review round cap and dispatch Prometheus QA
+        shell: bash
+        env:
+          REPO_FULL_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ACTION: ${{ github.event.action }}
+          OPENCLAW_GATEWAY_URL: ${{ secrets.OPENCLAW_GATEWAY_URL }}
+          OPENCLAW_GATEWAY_TOKEN: ${{ secrets.OPENCLAW_GATEWAY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          MAX_REVIEW_ROUNDS=3
+
+          if [[ -z "$OPENCLAW_GATEWAY_URL" || -z "$OPENCLAW_GATEWAY_TOKEN" ]]; then
+            echo "::warning::Gateway secrets not configured — skipping Prometheus QA dispatch"
+            exit 0
+          fi
+
+          # Skip if Daedalus already reviewed this exact SHA (dedup guard — mirrors Daedalus job)
+          daedalus_sha_reviewed=$(gh api "repos/${REPO_FULL_NAME}/pulls/${PR_NUMBER}/reviews" \
+            --jq "[.[] | select(.user.login == \"daedalus-reviewer[bot]\" and .commit_id == \"${HEAD_SHA}\")] | length" 2>/dev/null || echo "0")
+          if [[ "$daedalus_sha_reviewed" -gt "0" ]]; then
+            echo "Daedalus already reviewed SHA ${HEAD_SHA:0:12} — skipping Prometheus QA dispatch"
+            exit 0
+          fi
+
+          # On synchronize, check review round cap
+          if [[ "$ACTION" == "synchronize" ]]; then
+            daedalus_commits=$(gh api "repos/${REPO_FULL_NAME}/pulls/${PR_NUMBER}/reviews" --jq '[.[] | select(.user.login == "daedalus-reviewer[bot]") | .commit_id] | unique | length' 2>/dev/null || echo "0")
+            if [[ "$daedalus_commits" -ge "$MAX_REVIEW_ROUNDS" ]]; then
+              echo "Review round cap reached (${daedalus_commits}/${MAX_REVIEW_ROUNDS}) — skipping Prometheus QA"
+              exit 0
+            fi
+          fi
+
+          # Compute review round: distinct SHAs Daedalus has reviewed + 1
+          REVIEW_ROUND=$(( $(gh api "repos/${REPO_FULL_NAME}/pulls/${PR_NUMBER}/reviews" \
+            --jq '[.[] | select(.user.login == "daedalus-reviewer[bot]") | .commit_id] | unique | length' 2>/dev/null || echo "0") + 1 ))
+
+          short_sha="${HEAD_SHA:0:12}"
+
+          message="[pr-qa-request]
+          Repository: ${REPO_FULL_NAME}
+          PR: #${PR_NUMBER}
+          Round: ${REVIEW_ROUND}
+          Head SHA: ${short_sha}
+          Test plan path: Agents/shared/pr-lifecycle/${REPO_FULL_NAME}-${PR_NUMBER}/test-results/test-plan-${REVIEW_ROUND}.json"
+
+          endpoint="${OPENCLAW_GATEWAY_URL%/}/v1/responses"
+          json_body=$(printf '{"model":"openclaw/prometheus","input":%s}' "$(printf '%s' "$message" | jq -Rs .)")
+
+          # Retry up to 3 times with backoff (30s, 60s, 120s)
+          MAX_RETRIES=3
+          RETRY_DELAY=30
+          attempt=0
+          curl_exit=1
+
+          while [[ $attempt -lt $MAX_RETRIES ]]; do
+            attempt=$((attempt + 1))
+            echo "Prometheus QA dispatch attempt ${attempt}/${MAX_RETRIES}..."
+
+            curl --silent --show-error --fail \
+              --request POST "$endpoint" \
+              --header "Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}" \
+              --header "X-OpenClaw-Scopes: operator.write" \
+              --header "Content-Type: application/json" \
+              --connect-timeout 15 \
+              --max-time 600 \
+              --data "$json_body"
+            curl_exit=$?
+
+            if [[ $curl_exit -eq 0 ]]; then
+              echo "Dispatched Prometheus QA for ${REPO_FULL_NAME}#${PR_NUMBER} (round=${REVIEW_ROUND}, sha=${short_sha})"
+              break
+            fi
+
+            echo "::warning::Prometheus QA dispatch attempt ${attempt} failed (curl exit=${curl_exit})"
+            if [[ $attempt -lt $MAX_RETRIES ]]; then
+              echo "Retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            fi
+          done
+
+          if [[ $curl_exit -ne 0 ]]; then
+            echo "::warning::Prometheus QA dispatch failed after ${MAX_RETRIES} attempts (curl exit=${curl_exit}) — Daedalus review proceeds without QA results"
+            exit 0
           fi
