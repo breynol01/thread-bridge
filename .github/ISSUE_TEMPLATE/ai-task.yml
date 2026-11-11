@@ -1,0 +1,60 @@
+name: AI-eligible task
+description: Bounded task an AI agent can complete in one PR. The harness DevOps loop will pick this up automatically.
+labels: ["ai-task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when the work meets all four AI-task criteria:
+        bounded scope, concrete acceptance, contained risk, no human coordination.
+        If any of those fail, use the Roadmap or Enhancement template instead.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: One sentence — what done looks like.
+      placeholder: e.g. "Rename `worktree_path` to `worktree_dir` in `failure_handler._cleanup_worktree`."
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Concrete, externally verifiable acceptance criteria. Checkboxes preferred.
+      placeholder: |
+        - [ ] All references to `worktree_path` in `failure_handler.py` renamed
+        - [ ] `pytest tests/test_failure_handler.py` passes
+        - [ ] `ruff check .` passes
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Files / scope
+      description: Which files, modules, or surfaces does this touch?
+      placeholder: |
+        - `src/orchestrator/nodes/failure_handler.py`
+        - `tests/test_failure_handler.py`
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context (optional)
+      description: Background, root-cause references, related PRs/issues, prior decisions.
+    validations:
+      required: false
+  - type: checkboxes
+    id: criteria-check
+    attributes:
+      label: AI-task criteria
+      description: Confirm each criterion holds. If any fail, this is not an ai-task.
+      options:
+        - label: Scope is bounded — one node, file group, or well-defined concern
+          required: true
+        - label: Acceptance criteria are concrete and externally verifiable
+          required: true
+        - label: No canon/governance edits, no auth/secrets surface, no schema migrations, no infra changes
+          required: true
+        - label: No human coordination, external party, or in-flight PR dependency
+          required: true

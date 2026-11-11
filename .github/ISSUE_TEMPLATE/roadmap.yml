@@ -1,0 +1,47 @@
+name: Roadmap item
+description: Multi-week, multi-phase, or design-dependent work. The harness DevOps loop will NOT pick this up.
+labels: ["roadmap"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for work that is too large or design-dependent for autonomous execution.
+        Roadmap items are intentionally outside the AI agent loop until they're broken into ai-task slices.
+  - type: textarea
+    id: vision
+    attributes:
+      label: Vision
+      description: What does this enable? Why does it matter?
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: Rough shape
+      description: Phased plan, components, or architectural sketch. High level — implementation details belong in the ai-task slices.
+      placeholder: |
+        - Phase 1: ...
+        - Phase 2: ...
+        - Phase 3: ...
+    validations:
+      required: true
+  - type: textarea
+    id: depends-on
+    attributes:
+      label: Depends on
+      description: Open issues, external decisions, or unreleased platform features this blocks on.
+    validations:
+      required: false
+  - type: textarea
+    id: success-signals
+    attributes:
+      label: Success signals
+      description: How will we know this is working once shipped? Not done-when — softer.
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Open questions / notes
+    validations:
+      required: false
