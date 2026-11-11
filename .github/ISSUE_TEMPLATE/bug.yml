@@ -1,0 +1,52 @@
+name: Bug
+description: A defect with reproducible behavior. The harness DevOps loop picks these up if scope is bounded.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Symptom
+      description: What's wrong? One paragraph.
+      placeholder: e.g. "`pr_creator` emits `JSONDecodeError` when the LLM response contains multiple JSON blocks."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that consistently trigger the bug.
+      placeholder: |
+        1. Trigger a run with `ISSUE_BUDGET=1` against an issue whose body contains code blocks
+        2. Observe the `pr_creator` node failure in the session log
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: root-cause
+    attributes:
+      label: Root cause (if known)
+      description: Code path, line numbers, or hypothesis. Leave blank if not yet investigated.
+    validations:
+      required: false
+  - type: textarea
+    id: scope
+    attributes:
+      label: Files / scope
+      description: Which files or modules the fix touches.
+    validations:
+      required: false
+  - type: checkboxes
+    id: ai-eligible
+    attributes:
+      label: AI-task eligibility
+      description: Check if this bug also meets ai-task criteria. If yes, label `ai-task` will be added on creation.
+      options:
+        - label: Bounded scope, concrete fix, contained risk, no human coordination needed → also apply `ai-task`
+          required: false
